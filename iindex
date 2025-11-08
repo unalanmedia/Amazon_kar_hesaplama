@@ -1,0 +1,69 @@
+<!DOCTYPE html><html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon Almanya Kâr Hesaplama</title>
+<style>
+  body { font-family: Arial, sans-serif; background: #f7f8fa; padding: 20px; }
+  h1 { text-align: center; color: #222; }
+  .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  label { font-weight: bold; display: block; margin-top: 12px; }
+  input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 8px; margin-top: 4px; }
+  button { margin-top: 20px; width: 100%; padding: 12px; border: none; background: #0073e6; color: white; font-size: 16px; border-radius: 8px; cursor: pointer; }
+  button:hover { background: #005bb5; }
+  .result { margin-top: 20px; padding: 15px; background: #e8f5e9; border-radius: 8px; text-align: center; font-size: 18px; }
+</style>
+</head>
+<body>
+  <h1>Amazon Almanya Kâr Hesaplayıcı</h1>
+  <div class="container">
+    <label>Ürün Maliyeti (€)</label>
+    <input type="number" id="productCost" step="0.01" placeholder="Örn: 4.35"><label>Ambalaj ve Etiket (€)</label>
+<input type="number" id="packaging" step="0.01" placeholder="Örn: 0.20">
+
+<label>Türkiye İçi Kargo (€)</label>
+<input type="number" id="domesticShipping" step="0.01" placeholder="Örn: 0.30">
+
+<label>Uluslararası Kargo (€)</label>
+<input type="number" id="internationalShipping" step="0.01" placeholder="Örn: 2.00">
+
+<label>Gümrük ve Vergi (€)</label>
+<input type="number" id="customsTax" step="0.01" placeholder="Örn: 1.00">
+
+<label>Amazon Komisyonu (€)</label>
+<input type="number" id="amazonFee" step="0.01" placeholder="Örn: 3.50">
+
+<label>Reklam Gideri (€)</label>
+<input type="number" id="adCost" step="0.01" placeholder="Örn: 1.00">
+
+<label>Satış Fiyatı (€)</label>
+<input type="number" id="salePrice" step="0.01" placeholder="Örn: 15.99">
+
+<label>1 € Kaç TL?</label>
+<input type="number" id="eurRate" step="0.01" placeholder="Örn: 48">
+
+<button onclick="calculateProfit()">Kârı Hesapla</button>
+
+<div id="result" class="result"></div>
+
+  </div><script>
+function calculateProfit() {
+  const productCost = parseFloat(document.getElementById('productCost').value) || 0;
+  const packaging = parseFloat(document.getElementById('packaging').value) || 0;
+  const domesticShipping = parseFloat(document.getElementById('domesticShipping').value) || 0;
+  const internationalShipping = parseFloat(document.getElementById('internationalShipping').value) || 0;
+  const customsTax = parseFloat(document.getElementById('customsTax').value) || 0;
+  const amazonFee = parseFloat(document.getElementById('amazonFee').value) || 0;
+  const adCost = parseFloat(document.getElementById('adCost').value) || 0;
+  const salePrice = parseFloat(document.getElementById('salePrice').value) || 0;
+  const eurRate = parseFloat(document.getElementById('eurRate').value) || 48;
+
+  const totalCost = productCost + packaging + domesticShipping + internationalShipping + customsTax + amazonFee + adCost;
+  const netProfitEur = salePrice - totalCost;
+  const netProfitTry = netProfitEur * eurRate;
+  const margin = (netProfitEur / salePrice) * 100;
+
+  document.getElementById('result').innerHTML = `💶 Net Kâr: <b>${netProfitEur.toFixed(2)} €</b>  |  💰 Yaklaşık <b>${netProfitTry.toFixed(0)} ₺</b><br>📈 Kârlılık Oranı: <b>${margin.toFixed(1)}%</b>`;
+}
+</script></body>
+</html>

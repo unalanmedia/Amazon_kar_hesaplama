@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Amazon Almanya Kâr Hesaplama (FBM) · TL/EUR Dönüşümlü</title>
+<style>
+  :root{--bg:#0b1220;--card:#101a2e;--muted:#8aa0bf;--accent:#00d084;--accent2:#1e90ff;}
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0b1220,#0e1424 40%,#0b1220);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;color:#e8f1ff;}
+  .wrap{max-width:820px;margin:24px auto;padding:16px}
+  h1{font-size:22px;text-align:center;margin:10px 0 18px}
+  .card{background:var(--card);border:1px solid #1a2846;border-radius:16px;padding:18px;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:700px){.grid{grid-template-columns:1fr}}
+  label{display:block;font-weight:600;margin-bottom:6px;color:#cfe0ff}
+  input[type=number]{width:100%;padding:12px 12px;border:1px solid #2a3b62;border-radius:10px;background:#0b1326;color:#e8f1ff;outline:none}
+  input::placeholder{color:#667aa3}
+  .btn{margin-top:14px;width:100%;padding:14px 16px;border:0;border-radius:12px;background:linear-gradient(135deg,var(--accent2),var(--accent));color:#02121f;font-weight:800;cursor:pointer}
+  .btn:hover{filter:brightness(1.08)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .chip{background:#0b1326;border:1px solid #2a3b62;border-radius:10px;padding:8px 10px;color:#cfe0ff}
+  .muted{color:var(--muted);font-size:12.5px}
+  .result{margin-top:16px;padding:16px;border-radius:12px;background:#0b1b2e;border:1px solid #1e3054}
+  .switch{display:flex;align-items:center;gap:10px;margin:8px 0 4px}
+  .hint{font-size:12px;color:#9bb2d1;margin-top:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Amazon Almanya Kâr Hesaplayıcı · FBM (Kendi Gönderim)</h1>
+  <div class="card">
+    
+    <div class="grid">
+      <div>
+        <label>Satış Fiyatı (€)</label>
+        <input type="number" id="salePrice" step="0.01" value="15.99" placeholder="Örn: 15.99" />
+      </div>
+      <div>
+        <label>1 € Kaç TL?</label>
+        <input type="number" id="eurRate" step="0.01" value="48" placeholder="Örn: 48" />
+        <div class="hint">Kur değişirse TL girilen maliyetlerin hepsi otomatik yeniden hesaplanır.</div>
+      </div>
+    </div>
+
+    <div class="switch">
+      <input type="checkbox" id="costsInTRY" />
+      <label for="costsInTRY" style="margin:0">Maliyetleri <b>TL</b> giriyorum (satış fiyatı yine €)</label>
+    </div>
+    <div class="hint">Bu kutu işaretliyse aşağıdaki tüm maliyet alanlarına TL yazın; sistem €'ya çevirerek hesaplar.</div>
+
+    <div class="grid" style="margin-top:12px">
+      <div>
+        <label>Ürün Maliyeti (<span id="c1">€</span>)</label>
+        <input type="number" id="productCost" step="0.01" value="4.35" placeholder="Örn: 4.35" />
+      </div>
+      <div>
+        <label>Ambalaj ve Etiket (<span id="c2">€</span>)</label>
+        <input type="number" id="packaging" step="0.01" value="0.20" placeholder="Örn: 0.20" />
+      </div>
+      <div>
+        <label>Türkiye İçi Kargo (<span id="c3">€</span>)</label>
+        <input type="number" id="domesticShipping" step="0.01" value="0.30" placeholder="Örn: 0.30" />
+      </div>
+      <div>
+        <label>Uluslararası Kargo (<span id="c4">€</span>)</label>
+        <input type="number" id="internationalShipping" step="0.01" value="2.00" placeholder="Örn: 2.00" />
+      </div>
+      <div>
+        <label>Gümrük ve Vergi (<span id="c5">€</span>)</label>
+        <input type="number" id="customsTax" step="0.01" value="1.00" placeholder="Örn: 1.00" />
+      </div>
+      <div>
+        <label>Reklam Gideri (PPC) (<span id="c6">€</span>)</label>
+        <input type="number" id="adCost" step="0.01" value="1.00" placeholder="Örn: 1.00" />
+      </div>
+    </div>
+
+    <div class="row muted">
+      <div class="chip">Model: FBM (kendi gönderim)</div>
+      <div class="chip">Amazon Komisyonu: %15 (otomatik)</div>
+      <div class="chip">FBA Ücreti: Yok</div>
+      <div class="chip"><span id="modeChip">Girdiler EUR</span></div>
+    </div>
+
+    <button class="btn" id="calc">Kârı Hesapla</button>
+
+    <div id="result" class="result">
+      <div class="muted">Sonuç burada görünecek.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function fmt(n, d=2){return Number(n).toFixed(d)}
+function euro(n){return fmt(n,2)+" €"}
+function lira(n){return Math.round(n).toString()+" ₺"}
+
+function getVal(id){return parseFloat(document.getElementById(id).value)||0}
+
+function convertIfTRY(val, eurRate, costsInTRY){
+  return costsInTRY ? (val / eurRate) : val; // TL -> EUR
+}
+
+function updateLabels(){
+  const costsInTRY = document.getElementById('costsInTRY').checked;
+  for(let i=1;i<=6;i++){ document.getElementById('c'+i).textContent = costsInTRY ? 'TL' : '€'; }
+  document.getElementById('modeChip').textContent = costsInTRY ? 'Maliyetler TL → EUR dönüşüm' : 'Girdiler EUR';
+}
+
+function calculate(){
+  const eurRate = getVal('eurRate');
+  const costsInTRY = document.getElementById('costsInTRY').checked;
+
+  const productCost = convertIfTRY(getVal('productCost'), eurRate, costsInTRY);
+  const packaging = convertIfTRY(getVal('packaging'), eurRate, costsInTRY);
+  const domesticShipping = convertIfTRY(getVal('domesticShipping'), eurRate, costsInTRY);
+  const internationalShipping = convertIfTRY(getVal('internationalShipping'), eurRate, costsInTRY);
+  const customsTax = convertIfTRY(getVal('customsTax'), eurRate, costsInTRY);
+  const adCost = convertIfTRY(getVal('adCost'), eurRate, costsInTRY);
+
+  const salePrice = getVal('salePrice'); // €
+  const amazonFee = salePrice * 0.15;    // %15 komisyon
+
+  const totalCost = productCost + packaging + domesticShipping + internationalShipping + customsTax + adCost + amazonFee;
+  const netProfitEur = salePrice - totalCost;
+  const netProfitTry = netProfitEur * eurRate;
+  const margin = salePrice>0 ? (netProfitEur / salePrice) * 100 : 0;
+
+  const html = `
+    <div><b>Net Kâr:</b> ${euro(netProfitEur)}  |  <b>${lira(netProfitTry)}</b></div>
+    <div style="margin-top:6px">📈 <b>Kârlılık Oranı:</b> ${fmt(margin,1)}%</div>
+    <hr style="border:0;border-top:1px solid #1e3054;margin:12px 0">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>Satış Fiyatı</div><div style="text-align:right">${euro(salePrice)}</div>
+      <div>Amazon Komisyonu (%15)</div><div style="text-align:right">${euro(amazonFee)}</div>
+      <div>Ürün + Ambalaj (EUR)</div><div style="text-align:right">${euro(productCost + packaging)}</div>
+      <div>Türkiye İçi Kargo (EUR)</div><div style="text-align:right">${euro(domesticShipping)}</div>
+      <div>Uluslararası Kargo (EUR)</div><div style="text-align:right">${euro(internationalShipping)}</div>
+      <div>Gümrük ve Vergi (EUR)</div><div style="text-align:right">${euro(customsTax)}</div>
+      <div>Reklam (PPC) (EUR)</div><div style="text-align:right">${euro(adCost)}</div>
+      <div><b>Toplam Gider</b></div><div style="text-align:right"><b>${euro(totalCost)}</b></div>
+    </div>`;
+  document.getElementById('result').innerHTML = html;
+  updateLabels();
+}
+
+// Events
+window.addEventListener('load', ()=>{updateLabels();calculate();});
+['productCost','packaging','domesticShipping','internationalShipping','customsTax','adCost','salePrice','eurRate','costsInTRY'].forEach(id=>{
+  document.getElementById(id).addEventListener('input', calculate);
+  document.getElementById(id).addEventListener('change', calculate);
+});
+document.getElementById('calc').addEventListener('click', calculate);
+</script>
+</body>
+</html>
